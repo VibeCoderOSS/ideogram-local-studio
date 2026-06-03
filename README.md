@@ -22,18 +22,39 @@ New generated images are also written to `outputs/`, but `.gitignore` keeps norm
 - About 30 GB free disk space for FP8 weights, more if you also download NF4.
 - Enough unified memory for local inference. This was tested on an M4 Max with 128 GB.
 
-## Where The Weights Go
+## Hugging Face Login And Weight Download
 
-Create these folders in the project root:
+First create the local Python runtime. This installs the Hugging Face CLI inside `.venv/`:
 
 ```bash
-mkdir -p models
+./scripts/bootstrap-runtime.sh
 ```
+
+Accept the model terms and request access on Hugging Face before downloading:
+
+- https://huggingface.co/ideogram-ai/ideogram-4-fp8
+- https://huggingface.co/ideogram-ai/ideogram-4-nf4
+
+Then log in. The command will prompt for your Hugging Face access token:
+
+```bash
+.venv/bin/huggingface-cli login
+```
+
+Use a **read** token from Hugging Face. Do not commit tokens, `.env` files, shell history dumps, or downloaded model folders.
+
+Alternative non-interactive login for CI or a temporary shell:
+
+```bash
+export HF_TOKEN="hf_your_token_here"
+```
+
+With either login method, download the weights directly into the paths expected by the app.
 
 Recommended Apple Silicon model:
 
 ```bash
-huggingface-cli download ideogram-ai/ideogram-4-fp8 \
+.venv/bin/huggingface-cli download ideogram-ai/ideogram-4-fp8 \
   --local-dir models/ideogram-4-fp8 \
   --local-dir-use-symlinks False
 ```
@@ -41,7 +62,7 @@ huggingface-cli download ideogram-ai/ideogram-4-fp8 \
 Optional NF4 model:
 
 ```bash
-huggingface-cli download ideogram-ai/ideogram-4-nf4 \
+.venv/bin/huggingface-cli download ideogram-ai/ideogram-4-nf4 \
   --local-dir models/ideogram-4-nf4 \
   --local-dir-use-symlinks False
 ```
@@ -74,7 +95,7 @@ Create the Python runtime and install backend dependencies:
 ./scripts/bootstrap-runtime.sh
 ```
 
-Start the app:
+Download the FP8 weights as described above, then start the app:
 
 ```bash
 npm run dev
