@@ -1,0 +1,19 @@
+node_modules/
+.venv/
+.electron-profile/
+.electron-profile-capture/
+.electron-profile-test/
+logs/
+design/
+*.log
+.DS_Store
+._*
+
+# Model weights are intentionally not committed.
+models/*
+!models/.gitkeep
+
+# Keep only curated example images in the starter Gallery.
+outputs/*
+!outputs/.gitkeep
+!outputs/example-*.png

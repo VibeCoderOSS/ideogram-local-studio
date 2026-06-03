@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImageGen Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="app-title">ImageGen Studio</div>
+        <button class="memory-pill" id="memory-pill" type="button" title="Unified memory status">
+          <img class="icon" src="../assets/icons/monitor.svg" alt="" />
+          <span>Unified Memory</span>
+          <span class="memory-track"><span id="memory-fill"></span></span>
+          <span id="memory-label">-- GB / -- GB</span>
+          <img class="icon sm" src="../assets/icons/chevron-down.svg" alt="" />
+        </button>
+      </header>
+
+      <aside class="sidebar">
+        <div class="brand-tile">
+          <img src="../assets/icons/sparkles.svg" alt="" />
+        </div>
+        <nav class="nav-list" aria-label="Primary navigation">
+          <button class="nav-item active" type="button" data-view="generation">
+            <img class="icon" src="../assets/icons/house.svg" alt="" />
+            <span>Generation</span>
+          </button>
+          <button class="nav-item" type="button" data-view="server">
+            <img class="icon" src="../assets/icons/code.svg" alt="" />
+            <span>Server API-Mode</span>
+          </button>
+          <button class="nav-item" type="button" data-view="gallery">
+            <img class="icon" src="../assets/icons/image.svg" alt="" />
+            <span>Gallery</span>
+          </button>
+          <button class="nav-item" type="button" data-view="settings">
+            <img class="icon" src="../assets/icons/settings.svg" alt="" />
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <div class="system-card">
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <div>
+              <strong>System</strong>
+              <small id="system-state">Checking runtime</small>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="status-row">
+            <span class="status-dot"></span>
+            <div>
+              <strong>Worker</strong>
+              <small id="worker-state">Idle</small>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="endpoint-row">
+            <span id="python-label">local python</span>
+            <button class="icon-button" id="open-output" type="button" title="Open output folder">
+              <img class="icon" src="../assets/icons/folder-open.svg" alt="" />
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <button class="round-button" id="help-button" type="button" title="Help">
+            <img class="icon" src="../assets/icons/badge-help.svg" alt="" />
+          </button>
+          <button class="round-button" id="sidebar-light-button" type="button" title="Light mode">
+            <img class="icon" src="../assets/icons/sun.svg" alt="" />
+          </button>
+        </div>
+      </aside>
+
+      <main class="workspace app-view active" data-view-panel="generation">
+        <section class="panel generation-panel">
+          <div class="panel-heading">
+            <div>
+              <h1>Generation</h1>
+              <p>Create images with local Ideogram 4 weights.</p>
+            </div>
+          </div>
+
+          <form id="generation-form">
+            <div class="field-heading">
+              <label for="prompt">Prompt</label>
+              <div class="prompt-actions">
+                <button type="button" class="ghost-button" id="enhance-prompt">
+                  <img class="icon sm" src="../assets/icons/wand-sparkles.svg" alt="" />
+                  Enhance Prompt
+                </button>
+                <button type="button" class="ghost-button" id="clear-prompt">
+                  <img class="icon sm" src="../assets/icons/eraser.svg" alt="" />
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div class="textarea-shell">
+              <textarea id="prompt" maxlength="2000" spellcheck="false">A serene mountain lake at sunrise, cinematic lighting, ultra realistic, detailed landscape, reflections on water, 8k</textarea>
+              <span class="counter" id="prompt-counter">0 / 2000</span>
+            </div>
+
+            <div class="field-heading compact">
+              <label for="negative-prompt">Negative Prompt <span>(optional)</span></label>
+            </div>
+            <div class="input-shell">
+              <input id="negative-prompt" maxlength="2000" value="blurry, low quality, distorted, text, watermark, signature" />
+              <span class="counter" id="negative-counter">0 / 2000</span>
+            </div>
+
+            <section class="parameters">
+              <h2>Generation Parameters</h2>
+
+              <div class="two-col">
+                <label class="select-field">
+                  <span>Model</span>
+                  <select id="model-select">
+                    <option value="fp8" selected>Ideogram 4 FP8 - Apple Silicon</option>
+                    <option value="nf4">Ideogram 4 NF4 - CUDA only</option>
+                  </select>
+                </label>
+                <label class="select-field">
+                  <span>Sampler</span>
+                  <select id="sampler-select">
+                    <option value="V4_TURBO_12">V4 Turbo 12</option>
+                    <option value="V4_DEFAULT_20" selected>V4 Default 20</option>
+                    <option value="V4_QUALITY_48">V4 Quality 48</option>
+                    <option value="custom">Custom CFG</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="slider-row">
+                <label for="steps">Steps</label>
+                <input id="steps" type="range" min="12" max="48" step="1" value="20" />
+                <input class="numeric" id="steps-value" type="number" min="12" max="48" value="20" />
+              </div>
+
+              <div class="slider-row">
+                <label for="cfg-scale">CFG Scale</label>
+                <input id="cfg-scale" type="range" min="1" max="12" step="0.1" value="7" />
+                <input class="numeric" id="cfg-value" type="number" min="1" max="12" step="0.1" value="7" />
+              </div>
+
+              <div class="seed-row">
+                <label for="seed">Seed</label>
+                <input id="seed" type="number" value="-1" />
+                <button class="icon-button" type="button" id="random-seed" title="Random seed">
+                  <img class="icon" src="../assets/icons/sparkles.svg" alt="" />
+                </button>
+                <button class="icon-button" type="button" id="reset-seed" title="Reset seed">
+                  <img class="icon" src="../assets/icons/refresh-cw.svg" alt="" />
+                </button>
+              </div>
+
+              <div class="segmented-group">
+                <span>Size</span>
+                <div class="segments" id="size-buttons">
+                  <button type="button" data-size="512x512">512x512</button>
+                  <button type="button" data-size="768x768">768x768</button>
+                  <button type="button" data-size="1024x1024" class="active">1024x1024</button>
+                  <button type="button" data-size="1536x1024">1536x1024</button>
+                  <button type="button" data-size="custom">Custom</button>
+                </div>
+              </div>
+
+              <div class="segmented-group">
+                <span>Aspect Ratio</span>
+                <div class="segments" id="ratio-buttons">
+                  <button type="button" data-ratio="1:1" class="active">1:1</button>
+                  <button type="button" data-ratio="3:2">3:2</button>
+                  <button type="button" data-ratio="4:3">4:3</button>
+                  <button type="button" data-ratio="16:9">16:9</button>
+                  <button type="button" data-ratio="9:16">9:16</button>
+                  <button type="button" data-ratio="custom">Custom</button>
+                </div>
+              </div>
+
+              <div class="batch-row">
+                <div class="slider-row compact-slider">
+                  <label for="batch-count">Batch Count</label>
+                  <input id="batch-count" type="range" min="1" max="4" value="1" />
+                  <input class="numeric" id="batch-count-value" type="number" min="1" max="4" value="1" />
+                </div>
+                <div class="slider-row compact-slider">
+                  <label for="batch-size">Batch Size</label>
+                  <input id="batch-size" type="range" min="1" max="2" value="1" />
+                  <input class="numeric" id="batch-size-value" type="number" min="1" max="2" value="1" />
+                </div>
+              </div>
+            </section>
+
+            <div class="generate-row">
+              <button class="generate-button" id="generate-button" type="submit">
+                <img class="icon" src="../assets/icons/sparkles.svg" alt="" />
+                Generate
+              </button>
+              <button class="tune-button" type="button" id="doctor-button" title="Runtime diagnostics">
+                <img class="icon" src="../assets/icons/sliders-horizontal.svg" alt="" />
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="right-column">
+          <section class="preview-frame">
+            <div class="preview-stage">
+              <img id="preview-image" src="../assets/reference/preview-mountain.png" alt="Generated preview" />
+              <div class="generation-overlay hidden" id="generation-overlay">
+                <div class="spinner"></div>
+                <strong id="phase-label">Loading model</strong>
+                <span id="phase-detail">Preparing worker</span>
+              </div>
+            </div>
+            <div class="preview-actions">
+              <button type="button" id="download-action" title="Reveal output">
+                <img class="icon" src="../assets/icons/download.svg" alt="" />
+              </button>
+              <button type="button" id="copy-action" title="Copy output path">
+                <img class="icon" src="../assets/icons/copy.svg" alt="" />
+              </button>
+              <button type="button" id="favorite-action" title="Favorite">
+                <img class="icon" src="../assets/icons/heart.svg" alt="" />
+              </button>
+              <button type="button" id="more-action" title="Open output folder">
+                <img class="icon" src="../assets/icons/more-horizontal.svg" alt="" />
+              </button>
+            </div>
+          </section>
+
+          <section class="panel info-panel">
+            <h2>Generation Info</h2>
+            <dl>
+              <dt>Model</dt>
+              <dd id="info-model">Ideogram 4 FP8</dd>
+              <dt>Sampler</dt>
+              <dd id="info-sampler">V4 Default 20</dd>
+              <dt>Steps</dt>
+              <dd id="info-steps">20</dd>
+              <dt>CFG Scale</dt>
+              <dd id="info-cfg">7.0</dd>
+              <dt>Seed</dt>
+              <dd id="info-seed">-1</dd>
+              <dt>Size</dt>
+              <dd id="info-size">1024 x 1024</dd>
+              <dt>Created</dt>
+              <dd id="info-created">Not generated yet</dd>
+              <dt>Time</dt>
+              <dd id="info-time">--</dd>
+            </dl>
+          </section>
+
+          <section class="panel recent-panel">
+            <div class="recent-heading">
+              <h2>Recent Generations</h2>
+              <button type="button" class="ghost-button" id="view-all-gallery">View All <img class="icon sm" src="../assets/icons/chevron-down.svg" alt="" /></button>
+            </div>
+            <div class="thumb-strip" id="gallery-strip">
+              <button class="thumb active" type="button"><img src="../assets/reference/thumb-mountain.png" alt="" /></button>
+              <button class="thumb" type="button"><img src="../assets/reference/thumb-city.png" alt="" /></button>
+              <button class="thumb" type="button"><img src="../assets/reference/thumb-room.png" alt="" /></button>
+              <button class="thumb" type="button"><img src="../assets/reference/thumb-fantasy.png" alt="" /></button>
+            </div>
+          </section>
+
+          <section class="log-drawer" id="log-drawer">
+            <div class="log-heading">
+              <strong>Runtime Log</strong>
+              <button type="button" id="clear-log">Clear</button>
+            </div>
+            <pre id="runtime-log">Ready.</pre>
+          </section>
+        </aside>
+      </main>
+
+      <main class="page-workspace app-view" data-view-panel="server" aria-hidden="true">
+        <section class="page-header">
+          <div>
+            <h1>Server API-Mode</h1>
+            <p>Local HTTP interface for the same FP8 worker used by the UI.</p>
+          </div>
+          <div class="page-actions">
+            <button class="ghost-button" id="copy-endpoint" type="button">
+              <img class="icon sm" src="../assets/icons/copy.svg" alt="" />
+              Copy Endpoint
+            </button>
+            <button class="ghost-button" id="test-health" type="button">
+              <img class="icon sm" src="../assets/icons/activity.svg" alt="" />
+              Test Health
+            </button>
+          </div>
+        </section>
+
+        <section class="page-grid">
+          <article class="panel page-card">
+            <div class="card-heading">
+              <h2>Local Server</h2>
+              <span class="state-badge" id="api-state">Checking</span>
+            </div>
+            <dl class="dense-list">
+              <dt>Endpoint</dt>
+              <dd id="api-endpoint">http://127.0.0.1:7860</dd>
+              <dt>Health</dt>
+              <dd id="api-health-url">/health</dd>
+              <dt>Generate</dt>
+              <dd id="api-generate-url">/generate</dd>
+              <dt>Busy</dt>
+              <dd id="api-busy">--</dd>
+            </dl>
+          </article>
+
+          <article class="panel page-card">
+            <div class="card-heading">
+              <h2>Generate Request</h2>
+              <button class="icon-button" id="copy-curl" type="button" title="Copy request">
+                <img class="icon" src="../assets/icons/copy.svg" alt="" />
+              </button>
+            </div>
+            <pre class="code-block" id="api-curl-snippet"></pre>
+          </article>
+
+          <article class="panel page-card full-width">
+            <div class="card-heading">
+              <h2>Health Response</h2>
+              <button class="icon-button" id="refresh-api-status" type="button" title="Refresh status">
+                <img class="icon" src="../assets/icons/refresh-cw.svg" alt="" />
+              </button>
+            </div>
+            <pre class="code-block tall" id="api-health-output">Not tested yet.</pre>
+          </article>
+        </section>
+      </main>
+
+      <main class="page-workspace app-view" data-view-panel="gallery" aria-hidden="true">
+        <section class="page-header">
+          <div>
+            <h1>Gallery</h1>
+            <p>Browse generated files from the local outputs folder.</p>
+          </div>
+          <div class="page-actions">
+            <button class="ghost-button" id="refresh-gallery" type="button">
+              <img class="icon sm" src="../assets/icons/refresh-cw.svg" alt="" />
+              Refresh
+            </button>
+            <button class="ghost-button" id="open-gallery-folder" type="button">
+              <img class="icon sm" src="../assets/icons/folder-open.svg" alt="" />
+              Outputs
+            </button>
+          </div>
+        </section>
+
+        <section class="gallery-layout">
+          <div class="gallery-grid-large" id="gallery-grid"></div>
+          <aside class="panel gallery-detail">
+            <img id="gallery-preview" src="../assets/reference/preview-mountain.png" alt="Selected gallery image" />
+            <dl class="dense-list">
+              <dt>File</dt>
+              <dd id="gallery-file">Reference preview</dd>
+              <dt>Created</dt>
+              <dd id="gallery-created">--</dd>
+              <dt>Size</dt>
+              <dd id="gallery-size">--</dd>
+            </dl>
+            <div class="detail-actions">
+              <button class="ghost-button" id="gallery-reveal" type="button" disabled>
+                <img class="icon sm" src="../assets/icons/download.svg" alt="" />
+                Reveal
+              </button>
+              <button class="ghost-button" id="gallery-copy" type="button">
+                <img class="icon sm" src="../assets/icons/copy.svg" alt="" />
+                Copy Path
+              </button>
+              <button class="ghost-button" id="gallery-favorite" type="button">
+                <img class="icon sm" src="../assets/icons/heart.svg" alt="" />
+                Favorite
+              </button>
+              <button class="ghost-button danger-button" id="gallery-delete" type="button" disabled>
+                <img class="icon sm" src="../assets/icons/trash-2.svg" alt="" />
+                Delete
+              </button>
+            </div>
+          </aside>
+        </section>
+      </main>
+
+      <main class="page-workspace app-view" data-view-panel="settings" aria-hidden="true">
+        <section class="page-header">
+          <div>
+            <h1>Settings</h1>
+            <p>Runtime paths, model availability, and local diagnostics.</p>
+          </div>
+          <div class="page-actions">
+            <button class="ghost-button" id="settings-doctor" type="button">
+              <img class="icon sm" src="../assets/icons/sliders-horizontal.svg" alt="" />
+              Run Doctor
+            </button>
+            <button class="ghost-button" id="settings-copy-paths" type="button">
+              <img class="icon sm" src="../assets/icons/copy.svg" alt="" />
+              Copy Paths
+            </button>
+          </div>
+        </section>
+
+        <section class="settings-grid">
+          <article class="panel page-card">
+            <h2>Runtime</h2>
+            <dl class="dense-list">
+              <dt>Python</dt>
+              <dd id="settings-python">--</dd>
+              <dt>Root</dt>
+              <dd id="settings-root">--</dd>
+              <dt>Outputs</dt>
+              <dd id="settings-outputs">--</dd>
+              <dt>API</dt>
+              <dd id="settings-api">--</dd>
+            </dl>
+            <button class="ghost-button block-action" id="settings-open-root" type="button">
+              <img class="icon sm" src="../assets/icons/folder-open.svg" alt="" />
+              Open Project Folder
+            </button>
+          </article>
+
+          <article class="panel page-card">
+            <h2>Models</h2>
+            <dl class="dense-list">
+              <dt>FP8</dt>
+              <dd id="settings-fp8">--</dd>
+              <dt>NF4</dt>
+              <dd id="settings-nf4">--</dd>
+              <dt>MPS</dt>
+              <dd id="settings-mps">--</dd>
+              <dt>Torch</dt>
+              <dd id="settings-torch">--</dd>
+              <dt>Ideogram Runtime</dt>
+              <dd id="settings-vendor">--</dd>
+            </dl>
+          </article>
+
+          <article class="panel page-card full-width">
+            <div class="card-heading">
+              <h2>Doctor Output</h2>
+              <span class="state-badge" id="doctor-state">Idle</span>
+            </div>
+            <pre class="code-block tall" id="settings-doctor-output">No diagnostics run yet.</pre>
+          </article>
+        </section>
+      </main>
+
+      <footer class="version-footer">
+        <span>v1.2.0</span>
+        <button type="button" class="light-button" id="light-button">
+          <img class="icon sm" src="../assets/icons/sun.svg" alt="" />
+          Light Mode
+        </button>
+        <button type="button" class="round-button tiny" id="collapse-sidebar" title="Collapse">
+          <img class="icon sm" src="../assets/icons/panel-left.svg" alt="" />
+        </button>
+      </footer>
+    </div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

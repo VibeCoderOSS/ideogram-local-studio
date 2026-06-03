@@ -1,0 +1,22 @@
+{
+  "name": "ideogram-local-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron UI for local Ideogram 4 generation on Apple Silicon.",
+  "main": "app/electron/main.cjs",
+  "scripts": {
+    "postinstall": "COPYFILE_DISABLE=1 node scripts/sync-icons.mjs",
+    "start": "COPYFILE_DISABLE=1 electron .",
+    "dev": "COPYFILE_DISABLE=1 electron .",
+    "dev:web": "COPYFILE_DISABLE=1 python3 -m http.server 4173 --directory app",
+    "capture:ui": "COPYFILE_DISABLE=1 electron scripts/capture-ui.cjs",
+    "test:ui": "COPYFILE_DISABLE=1 electron scripts/test-ui.cjs",
+    "test:api": "COPYFILE_DISABLE=1 node scripts/test-api.cjs",
+    "check:backend": "COPYFILE_DISABLE=1 .venv/bin/python backend/worker.py --doctor",
+    "clean:appledouble": "find app backend scripts vendor outputs .venv/lib/python3.12/site-packages node_modules -name '._*' -type f -delete"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "lucide-static": "latest"
+  }
+}
