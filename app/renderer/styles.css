@@ -790,6 +790,8 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 10px;
   background: rgba(5, 10, 15, 0.72);
   backdrop-filter: blur(10px);
+  padding: 28px;
+  text-align: center;
 }
 
 .generation-overlay.hidden {
@@ -803,6 +805,46 @@ input[type="range"]::-webkit-slider-thumb {
   border: 3px solid rgba(255, 255, 255, 0.18);
   border-top-color: #5b8cff;
   animation: spin 1s linear infinite;
+}
+
+.overlay-progress {
+  width: min(340px, 86%);
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.overlay-progress.hidden {
+  display: none;
+}
+
+.overlay-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+  overflow: hidden;
+}
+
+#overlay-progress-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+  transition: width 180ms ease;
+}
+
+.overlay-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #dbeafe;
+  font-size: 12px;
+}
+
+.overlay-progress-meta span {
+  white-space: nowrap;
 }
 
 @keyframes spin {

@@ -1,4 +1,8 @@
 const fallbackBridge = {
+  generationCallbacks: [],
+  emitGenerationEvent(event) {
+    this.generationCallbacks.forEach((callback) => callback(event));
+  },
   async systemInfo() {
     return {
       totalGb: 128,
@@ -50,7 +54,38 @@ const fallbackBridge = {
     };
   },
   async generate(payload) {
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    const totalSteps = Math.max(4, Math.min(6, Number(payload.steps || 4)));
+    this.emitGenerationEvent({
+      type: "progress",
+      jobId: "fallback-generate",
+      phase: "sample",
+      message: `Image 1/1, seed ${payload.seed}, ${totalSteps} steps`,
+      step: 0,
+      totalSteps,
+      remainingSteps: totalSteps,
+      imageIndex: 1,
+      totalImages: 1,
+      globalStep: 0,
+      globalTotalSteps: totalSteps,
+      globalRemainingSteps: totalSteps
+    });
+    for (let step = 1; step <= totalSteps; step += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 160));
+      this.emitGenerationEvent({
+        type: "progress",
+        jobId: "fallback-generate",
+        phase: "step",
+        message: `Step ${step}/${totalSteps}`,
+        step,
+        totalSteps,
+        remainingSteps: totalSteps - step,
+        imageIndex: 1,
+        totalImages: 1,
+        globalStep: step,
+        globalTotalSteps: totalSteps,
+        globalRemainingSteps: totalSteps - step
+      });
+    }
     return {
       type: "done",
       outputPath: "../assets/reference/preview-mountain.png",
@@ -71,8 +106,11 @@ const fallbackBridge = {
   async trashItem() {
     return { ok: true, images: [] };
   },
-  onGenerationEvent() {
-    return () => {};
+  onGenerationEvent(callback) {
+    this.generationCallbacks.push(callback);
+    return () => {
+      this.generationCallbacks = this.generationCallbacks.filter((item) => item !== callback);
+    };
   },
   onWorkerLog() {
     return () => {};
@@ -95,6 +133,8 @@ const state = {
   gallery: [],
   favorites: new Set(),
   lightMode: false,
+  progressFirstStepAt: null,
+  progressJobId: null,
   view: "generation"
 };
 
@@ -146,7 +186,11 @@ const els = {
   galleryCreated: qs("#gallery-created"),
   gallerySize: qs("#gallery-size"),
   doctorState: qs("#doctor-state"),
-  settingsDoctorOutput: qs("#settings-doctor-output")
+  settingsDoctorOutput: qs("#settings-doctor-output"),
+  overlayProgress: qs("#overlay-progress"),
+  overlayProgressFill: qs("#overlay-progress-fill"),
+  overlayProgressSteps: qs("#overlay-progress-steps"),
+  overlayProgressEta: qs("#overlay-progress-eta")
 };
 
 function setText(element, value) {
@@ -174,6 +218,20 @@ function formatBytes(bytes) {
     index += 1;
   }
   return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatDuration(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "--";
+  const rounded = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(rounded / 60);
+  const rest = rounded % 60;
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${String(mins).padStart(2, "0")}m`;
+  }
+  if (minutes > 0) return `${minutes}:${String(rest).padStart(2, "0")}`;
+  return `${rest}s`;
 }
 
 function fileUrl(path) {
@@ -216,6 +274,7 @@ function setBadge(element, label, tone = "ok") {
 
 function setBusy(isBusy) {
   state.generating = isBusy;
+  if (isBusy) resetStepProgress();
   els.generateButton.disabled = isBusy;
   els.generateButton.textContent = "";
   const icon = document.createElement("img");
@@ -224,6 +283,7 @@ function setBusy(isBusy) {
   icon.alt = "";
   els.generateButton.append(icon, document.createTextNode(isBusy ? " Generating" : " Generate"));
   els.overlay.classList.toggle("hidden", !isBusy);
+  if (!isBusy) resetStepProgress();
   setText(els.workerState, isBusy ? "Generating" : "Idle");
 }
 
@@ -231,6 +291,55 @@ function setPhase(phase, detail) {
   setText(els.phaseLabel, phase);
   setText(els.phaseDetail, detail || "");
   log(`${phase}: ${detail || ""}`.trim());
+}
+
+function resetStepProgress() {
+  state.progressFirstStepAt = null;
+  state.progressJobId = null;
+  els.overlayProgress?.classList.add("hidden");
+  if (els.overlayProgressFill) els.overlayProgressFill.style.width = "0%";
+  setText(els.overlayProgressSteps, "0 / 0 steps");
+  setText(els.overlayProgressEta, "ETA ab Schritt 2");
+}
+
+function showInitialStepProgress(event) {
+  const total = Number(event.globalTotalSteps || event.totalSteps || 0);
+  const done = Number(event.globalStep || 0);
+  const remaining = Math.max(0, total - done);
+  els.overlayProgress?.classList.remove("hidden");
+  if (els.overlayProgressFill) els.overlayProgressFill.style.width = total ? `${(done / total) * 100}%` : "0%";
+  setText(els.overlayProgressSteps, `${done} / ${total} steps · ${remaining} offen`);
+  setText(els.overlayProgressEta, "ETA ab Schritt 2");
+}
+
+function updateStepProgress(event) {
+  const globalStep = Number(event.globalStep || event.step || 0);
+  const globalTotal = Number(event.globalTotalSteps || event.totalSteps || 0);
+  const remaining = Number(event.globalRemainingSteps ?? Math.max(0, globalTotal - globalStep));
+  const imageIndex = Number(event.imageIndex || 1);
+  const totalImages = Number(event.totalImages || 1);
+  const pct = globalTotal > 0 ? Math.min(100, Math.max(0, (globalStep / globalTotal) * 100)) : 0;
+
+  if (globalStep <= 1 || state.progressJobId !== event.jobId) {
+    state.progressFirstStepAt = Date.now();
+    state.progressJobId = event.jobId || "current";
+  }
+
+  let etaText = "ETA ab Schritt 2";
+  if (globalStep >= 2 && state.progressFirstStepAt) {
+    const elapsedSeconds = (Date.now() - state.progressFirstStepAt) / 1000;
+    const measuredSteps = Math.max(1, globalStep - 1);
+    const secondsPerStep = elapsedSeconds / measuredSteps;
+    etaText = `ETA ${formatDuration(secondsPerStep * remaining)}`;
+  }
+
+  els.overlayProgress?.classList.remove("hidden");
+  if (els.overlayProgressFill) els.overlayProgressFill.style.width = `${pct}%`;
+  const imageText = totalImages > 1 ? ` · Bild ${imageIndex}/${totalImages}` : "";
+  setText(els.overlayProgressSteps, `${globalStep} / ${globalTotal} steps · ${remaining} offen${imageText}`);
+  setText(els.overlayProgressEta, etaText);
+  setText(els.phaseLabel, "Sampling");
+  setText(els.phaseDetail, `Step ${event.step || globalStep}/${event.totalSteps || globalTotal}`);
 }
 
 function updateRangeFill(range) {
@@ -880,6 +989,15 @@ function bindBridgeEvents() {
       setText(els.workerState, "Ready");
     }
     if (event.type === "progress") {
+      if (event.phase === "sample") {
+        showInitialStepProgress(event);
+        setPhase("Sampling", event.message || "");
+        return;
+      }
+      if (event.phase === "step") {
+        updateStepProgress(event);
+        return;
+      }
       setPhase(event.phase || "Working", event.message || "");
     }
     if (event.type === "error") {

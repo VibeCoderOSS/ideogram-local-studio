@@ -211,12 +211,42 @@ def generate(request: dict[str, Any]) -> None:
   output_paths: list[str] = []
   for image_index in range(total_images):
     image_seed = seed + image_index
+    total_steps = int(call_kwargs["num_steps"])
+
+    def emit_step(step_done: int, image_steps: int) -> None:
+      global_step = image_index * image_steps + step_done
+      global_total = total_images * image_steps
+      emit(
+        {
+          "type": "progress",
+          "jobId": job_id,
+          "phase": "step",
+          "message": f"Step {step_done}/{image_steps}",
+          "step": step_done,
+          "totalSteps": image_steps,
+          "remainingSteps": max(0, image_steps - step_done),
+          "imageIndex": image_index + 1,
+          "totalImages": total_images,
+          "globalStep": global_step,
+          "globalTotalSteps": global_total,
+          "globalRemainingSteps": max(0, global_total - global_step),
+        }
+      )
+
     emit(
       {
         "type": "progress",
         "jobId": job_id,
         "phase": "sample",
-        "message": f"Image {image_index + 1}/{total_images}, seed {image_seed}",
+        "message": f"Image {image_index + 1}/{total_images}, seed {image_seed}, {total_steps} steps",
+        "step": 0,
+        "totalSteps": total_steps,
+        "remainingSteps": total_steps,
+        "imageIndex": image_index + 1,
+        "totalImages": total_images,
+        "globalStep": image_index * total_steps,
+        "globalTotalSteps": total_images * total_steps,
+        "globalRemainingSteps": total_images * total_steps - image_index * total_steps,
       }
     )
     images = pipe(
@@ -225,6 +255,7 @@ def generate(request: dict[str, Any]) -> None:
       width=width,
       seed=image_seed,
       raise_on_caption_issues=False,
+      progress_callback=emit_step,
       **call_kwargs,
     )
     filename = f"ideogram4_{int(started)}_{width}x{height}_seed{image_seed}.png"

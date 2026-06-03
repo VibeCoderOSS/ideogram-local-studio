@@ -4,7 +4,7 @@ import json
 import warnings
 from dataclasses import dataclass
 from posixpath import dirname as _posix_dirname, join as _posix_join
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 import torch
 from huggingface_hub import hf_hub_download
@@ -515,6 +515,7 @@ class Ideogram4Pipeline:
     seed: Optional[int] = None,
     schedule: Optional[LogitNormalSchedule] = None,
     raise_on_caption_issues: bool = True,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
   ) -> list[Image.Image]:
     """Generate images for the given prompts."""
     if isinstance(prompts, str):
@@ -613,6 +614,8 @@ class Ideogram4Pipeline:
       v = gw_i * pos_v + (1.0 - gw_i) * neg_v
       delta = s_val - t_val
       z = z + v * delta
+      if progress_callback is not None:
+        progress_callback(num_steps - i, num_steps)
 
     return self._decode(z, grid_h=grid_h, grid_w=grid_w)  # type: ignore[arg-type]
 

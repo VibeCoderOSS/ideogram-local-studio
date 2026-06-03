@@ -98,7 +98,11 @@ async function main() {
       assert(qs('#favorite-action').classList.contains('active'), 'favorite failed');
 
       click('#generate-button');
-      await wait(1400);
+      await wait(560);
+      assert(!qs('#overlay-progress').classList.contains('hidden'), 'step progress did not appear');
+      assert(qs('#overlay-progress-steps').textContent.includes('offen'), 'remaining steps text missing');
+      assert(/^ETA (\\d|\\d+:)/.test(qs('#overlay-progress-eta').textContent), 'ETA was not shown after step 2');
+      await wait(800);
       assert(!qs('#generation-overlay').classList.contains('hidden') === false, 'generation overlay did not hide');
       assert(qs('#info-time').textContent !== '--', 'generate did not update info time');
 
