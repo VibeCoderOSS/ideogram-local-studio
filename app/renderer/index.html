@@ -181,6 +181,18 @@
                 </div>
               </div>
 
+              <div class="custom-size-row hidden" id="custom-size-row">
+                <label class="custom-size-field" for="custom-width">
+                  <span>Width</span>
+                  <input id="custom-width" type="number" min="256" max="2048" step="16" value="1024" />
+                </label>
+                <label class="custom-size-field" for="custom-height">
+                  <span>Height</span>
+                  <input id="custom-height" type="number" min="256" max="2048" step="16" value="1024" />
+                </label>
+                <button class="ghost-button" id="apply-custom-size" type="button">Apply</button>
+              </div>
+
               <div class="batch-row">
                 <div class="slider-row compact-slider">
                   <label for="batch-count">Batch Count</label>

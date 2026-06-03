@@ -120,6 +120,9 @@ const fallbackBridge = {
 };
 
 const bridge = window.ideogram || fallbackBridge;
+const CUSTOM_SIZE_MIN = 256;
+const CUSTOM_SIZE_MAX = 2048;
+const CUSTOM_SIZE_STEP = 16;
 
 const state = {
   width: 1024,
@@ -190,7 +193,11 @@ const els = {
   overlayProgress: qs("#overlay-progress"),
   overlayProgressFill: qs("#overlay-progress-fill"),
   overlayProgressSteps: qs("#overlay-progress-steps"),
-  overlayProgressEta: qs("#overlay-progress-eta")
+  overlayProgressEta: qs("#overlay-progress-eta"),
+  customSizeRow: qs("#custom-size-row"),
+  customWidth: qs("#custom-width"),
+  customHeight: qs("#custom-height"),
+  applyCustomSize: qs("#apply-custom-size")
 };
 
 function setText(element, value) {
@@ -377,27 +384,56 @@ function selectSegment(container, button) {
   button.classList.add("active");
 }
 
+function selectSegmentByValue(selector, dataName, value) {
+  const container = qs(selector);
+  const button = container?.querySelector(`[data-${dataName}="${value}"]`);
+  if (container && button) selectSegment(container, button);
+}
+
 function setSize(width, height) {
   state.width = width;
   state.height = height;
+  syncCustomInputs();
   syncInfo();
 }
 
-function askForSize() {
-  const raw = window.prompt("Width x height", `${state.width}x${state.height}`);
-  if (!raw) return false;
-  const match = raw.trim().match(/^(\d+)\s*[x,]\s*(\d+)$/i);
-  if (!match) {
-    window.alert("Use the format 1024x1024.");
-    return false;
-  }
-  const width = Number(match[1]);
-  const height = Number(match[2]);
-  if (width < 256 || height < 256 || width > 2048 || height > 2048 || width % 16 || height % 16) {
+function syncCustomInputs(width = state.width, height = state.height) {
+  if (els.customWidth) els.customWidth.value = String(width);
+  if (els.customHeight) els.customHeight.value = String(height);
+}
+
+function setCustomSizeControlsVisible(visible, focusField = "width") {
+  els.customSizeRow?.classList.toggle("hidden", !visible);
+  if (!visible) return;
+  syncCustomInputs();
+  requestAnimationFrame(() => {
+    const target = focusField === "height" ? els.customHeight : els.customWidth;
+    target?.focus();
+    target?.select();
+  });
+}
+
+function validCustomDimension(value) {
+  return (
+    Number.isInteger(value) &&
+    value >= CUSTOM_SIZE_MIN &&
+    value <= CUSTOM_SIZE_MAX &&
+    value % CUSTOM_SIZE_STEP === 0
+  );
+}
+
+function applyCustomSizeFromInputs() {
+  const width = Number(els.customWidth?.value);
+  const height = Number(els.customHeight?.value);
+  if (!validCustomDimension(width) || !validCustomDimension(height)) {
     window.alert("Width and height must be 256-2048 and multiples of 16.");
+    syncCustomInputs();
     return false;
   }
+  selectSegmentByValue("#size-buttons", "size", "custom");
+  selectSegmentByValue("#ratio-buttons", "ratio", "custom");
   setSize(width, height);
+  log(`Custom size set to ${width} x ${height}`);
   return true;
 }
 
@@ -857,10 +893,13 @@ function bindPromptAndParameters() {
     if (!button) return;
     const size = button.dataset.size;
     if (size === "custom") {
-      if (askForSize()) selectSegment(event.currentTarget, button);
+      selectSegment(event.currentTarget, button);
+      selectSegmentByValue("#ratio-buttons", "ratio", "custom");
+      setCustomSizeControlsVisible(true, "width");
       return;
     }
     selectSegment(event.currentTarget, button);
+    setCustomSizeControlsVisible(false);
     if (size === "512x512") setSize(512, 512);
     if (size === "768x768") setSize(768, 768);
     if (size === "1024x1024") setSize(1024, 1024);
@@ -872,15 +911,28 @@ function bindPromptAndParameters() {
     if (!button) return;
     const ratio = button.dataset.ratio;
     if (ratio === "custom") {
-      if (askForSize()) selectSegment(event.currentTarget, button);
+      selectSegment(event.currentTarget, button);
+      selectSegmentByValue("#size-buttons", "size", "custom");
+      setCustomSizeControlsVisible(true, "height");
       return;
     }
     selectSegment(event.currentTarget, button);
+    setCustomSizeControlsVisible(false);
     if (ratio === "1:1") setSize(1024, 1024);
     if (ratio === "3:2") setSize(1536, 1024);
     if (ratio === "4:3") setSize(1024, 768);
     if (ratio === "16:9") setSize(1920, 1088);
     if (ratio === "9:16") setSize(1024, 1792);
+  });
+
+  els.applyCustomSize?.addEventListener("click", applyCustomSizeFromInputs);
+  [els.customWidth, els.customHeight].forEach((input) => {
+    input?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyCustomSizeFromInputs();
+      }
+    });
   });
 }
 

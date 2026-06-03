@@ -86,6 +86,21 @@ async function main() {
       assert(qs('#info-size').textContent === '768 x 768', 'size button failed');
       click('[data-ratio="16:9"]');
       assert(qs('#info-size').textContent === '1920 x 1088', 'ratio button failed');
+      window.prompt = () => { throw new Error('custom size should not use window.prompt'); };
+      window.__lastAlert = '';
+      window.alert = (message) => { window.__lastAlert = String(message); };
+      click('[data-size="custom"]');
+      assert(!qs('#custom-size-row').classList.contains('hidden'), 'custom size controls did not appear');
+      qs('#custom-width').value = '640';
+      qs('#custom-height').value = '896';
+      click('#apply-custom-size');
+      assert(qs('#info-size').textContent === '640 x 896', 'custom size did not update info');
+      assert(qs('#api-curl-snippet').textContent.includes('"width": 640'), 'custom width missing from api payload');
+      assert(qs('#api-curl-snippet').textContent.includes('"height": 896'), 'custom height missing from api payload');
+      qs('#custom-width').value = '641';
+      click('#apply-custom-size');
+      assert(window.__lastAlert.includes('multiples of 16'), 'invalid custom size was not rejected');
+      assert(qs('#info-size').textContent === '640 x 896', 'invalid custom size changed current size');
 
       click('#light-button');
       assert(document.body.classList.contains('light-on'), 'light adjustment failed');

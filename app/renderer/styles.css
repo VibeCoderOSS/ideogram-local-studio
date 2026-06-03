@@ -102,6 +102,7 @@ body.light-on .input-shell,
 body.light-on select,
 body.light-on .numeric,
 body.light-on #seed,
+body.light-on .custom-size-field input,
 body.light-on .ghost-button,
 body.light-on .preview-actions button,
 body.light-on .segments button,
@@ -701,6 +702,35 @@ input[type="range"]::-webkit-slider-thumb {
 .segments button.active {
   border-color: rgba(47, 115, 255, 0.82);
   background: linear-gradient(180deg, #2c6df0, #1d56c7);
+}
+
+.custom-size-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 92px;
+  align-items: end;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.custom-size-row.hidden {
+  display: none;
+}
+
+.custom-size-field {
+  display: grid;
+  gap: 8px;
+}
+
+.custom-size-field input {
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(8, 14, 21, 0.88);
+  padding: 0 12px;
+}
+
+.custom-size-row .ghost-button {
+  height: 36px;
 }
 
 .batch-row {
